@@ -11,11 +11,8 @@
         h2 { color: var(--red); text-align: center; margin-top: 0; text-transform: uppercase; font-size: 1.2rem; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: var(--red); border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        .list-section { margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; }
-        .user-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #222; }
-        .del-btn { background: #330000; color: #ff3333; border: 1px solid #ff3333; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; }
         #status { font-size: 12px; text-align: center; margin-top: 10px; color: #888; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #222; }
     </style>
 </head>
 <body>
@@ -28,86 +25,58 @@
     <div id="status">Ready</div>
 
     <div class="list-section">
-        <button style="background: #222; margin-bottom: 15px;" onclick="loadWhitelist()">REFRESH LIST</button>
+        <button style="background: #222; margin-top: 15px;" onclick="loadWhitelist()">REFRESH LIST</button>
         <div id="whitelistDisplay"></div>
     </div>
 </div>
 
 <script>
-    const GIST_ID = "1f86a6cc80af35e8ac7aafb961099ea4"; 
-    const FILE_NAME = "Whislistrexz.json"; // Sesuaikan dengan nama file di Gist lu
+    const GIST_ID = "1f86a6cc80af35e8ac7aafb961099ea4";
+    const FILE_NAME = "Whislistrexz.json";
 
     async function loadWhitelist() {
-        const status = document.getElementById('status');
         const display = document.getElementById('whitelistDisplay');
-        status.innerText = "Loading list...";
-        
+        const status = document.getElementById('status');
         try {
             const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
             const data = await res.json();
-            // Perbaikan: Pakai variabel FILE_NAME
             const content = JSON.parse(data.files[FILE_NAME].content);
-            
             display.innerHTML = "";
             content.forEach(name => {
                 display.innerHTML += `
                     <div class="user-item">
                         <span>${name}</span>
-                        <button class="del-btn" onclick="updateWhitelist('remove', '${name}')">HAPUS</button>
+                        <button style="width:auto; padding:5px;" onclick="updateWhitelist('remove', '${name}')">Hapus</button>
                     </div>`;
             });
             status.innerText = "List Updated.";
-        } catch (e) {
-            status.innerText = "Gagal memuat list.";
-            console.error(e);
-        }
+        } catch (e) { status.innerText = "Gagal memuat."; }
     }
 
     async function updateWhitelist(action, targetUser) {
         const user = targetUser || document.getElementById('user').value.trim();
         const token = document.getElementById('token').value;
         const status = document.getElementById('status');
-
-        if (!user) return alert("Username wajib diisi!");
-        if (!token) return alert("GitHub Token wajib diisi untuk modifikasi!");
-        
-        status.innerText = "Processing...";
+        if (!user || !token) return alert("Isi Username & Token!");
 
         try {
             const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
             const data = await res.json();
-            // Perbaikan: Pakai variabel FILE_NAME
             let content = JSON.parse(data.files[FILE_NAME].content);
 
-            if (action === 'add') {
-                if (content.includes(user)) {
-                    status.innerText = "User sudah ada!";
-                    return;
-                }
-                content.push(user);
-            } else if (action === 'remove') {
-                content = content.filter(u => u !== user);
-            }
+            if (action === 'add') content.push(user);
+            else content = content.filter(u => u !== user);
 
             const update = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                 method: "PATCH",
                 headers: { "Authorization": `token ${token}` },
-                body: JSON.stringify({
-                    files: { [FILE_NAME]: { content: JSON.stringify(content, null, 4) } }
-                })
+                body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(content, null, 4) } } })
             });
 
-            if (update.ok) {
-                status.innerText = action === 'add' ? "User Ditambahkan! 😈" : "User Dihapus! 💀";
-                loadWhitelist(); 
-                document.getElementById('user').value = "";
-            } else {
-                status.innerText = "Gagal! Cek Token lu.";
-            }
-        } catch (e) {
-            status.innerText = "Error Koneksi.";
-        }
+            if (update.ok) { loadWhitelist(); status.innerText = "Success! 😈"; }
+        } catch (e) { status.innerText = "Error."; }
     }
-
     loadWhitelist();
 </script>
+</body>
+</html>
